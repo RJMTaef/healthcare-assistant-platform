@@ -4,6 +4,8 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import { config } from 'dotenv';
 import authRouter from './routes/auth';
+import appointmentsRouter from './routes/appointments';
+import doctorsRouter from './routes/doctors';
 
 // Load environment variables
 config();
@@ -17,6 +19,11 @@ app.use(helmet());
 app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Mount routers
+app.use('/api/auth', authRouter);
+app.use('/api/appointments', appointmentsRouter);
+app.use('/api/doctors', doctorsRouter);
 
 // Health check endpoint
 app.get('/health', (req: Request, res: Response) => {
@@ -38,4 +45,4 @@ app.listen(port, () => {
   console.log(`📝 Environment: ${process.env.NODE_ENV || 'development'}`);
 });
 
-app.use('/api/auth', authRouter); 
+export default app; 
