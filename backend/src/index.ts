@@ -6,6 +6,7 @@ import { config } from 'dotenv';
 import authRouter from './routes/auth';
 import appointmentsRouter from './routes/appointments';
 import doctorsRouter from './routes/doctors';
+import notificationsRouter from './routes/notifications';
 
 // Load environment variables
 config();
@@ -24,6 +25,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/auth', authRouter);
 app.use('/api/appointments', appointmentsRouter);
 app.use('/api/doctors', doctorsRouter);
+app.use('/api/notifications', notificationsRouter);
 
 // Health check endpoint
 app.get('/health', (req: Request, res: Response) => {

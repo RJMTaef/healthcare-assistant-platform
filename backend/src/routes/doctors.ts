@@ -8,7 +8,7 @@ const router = Router();
 // GET /api/doctors - list all doctors
 router.get('/', authMiddleware, asyncHandler(async (req, res) => {
   const result = await query(
-    `SELECT id, first_name, last_name, email, specialization, created_at, updated_at FROM users WHERE role = 'doctor' ORDER BY last_name, first_name;`
+    `SELECT id, first_name, last_name, email, created_at, updated_at FROM users WHERE role = 'doctor' ORDER BY last_name, first_name;`
   );
   res.status(200).json(result.rows);
 }));

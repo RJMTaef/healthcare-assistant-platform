@@ -152,6 +152,35 @@ const profileHandler = async (req: Request, res: Response) => {
   });
 };
 
+// PATCH /api/auth/profile - update current user's profile
+router.patch('/profile', authMiddleware, asyncHandler(async (req, res) => {
+  const user = req.user;
+  if (!user) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+  const { firstName, lastName, email } = req.body;
+  if (!firstName || !lastName || !email) {
+    return res.status(400).json({ message: 'All fields are required.' });
+  }
+  const result = await query(
+    `UPDATE users SET first_name = $1, last_name = $2, email = $3, updated_at = NOW() WHERE id = $4 RETURNING id, email, first_name, last_name, role, created_at, updated_at`,
+    [firstName, lastName, email, user.id]
+  );
+  if (!result.rows.length) {
+    return res.status(404).json({ message: 'User not found.' });
+  }
+  const updatedUser = result.rows[0];
+  res.json({
+    id: updatedUser.id,
+    email: updatedUser.email,
+    firstName: updatedUser.first_name,
+    lastName: updatedUser.last_name,
+    role: updatedUser.role,
+    createdAt: updatedUser.created_at,
+    updatedAt: updatedUser.updated_at,
+  });
+}));
+
 router.post('/register', registerHandler);
 router.post('/login', loginHandler);
 router.get('/profile', authMiddleware, asyncHandler(profileHandler));
