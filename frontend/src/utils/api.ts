@@ -43,6 +43,7 @@ export async function register(data: {
   firstName: string;
   lastName: string;
   role: string;
+  specialization?: string;
 }) {
   const response = await api.post('/auth/register', data);
   return response.data;
@@ -66,5 +67,10 @@ export async function getDemoAppointments(token: string) {
 
 export async function getDoctors() {
   const response = await api.get('/doctors');
+  return response.data;
+}
+
+export async function updateProfile(data: { firstName: string; lastName: string; email: string }) {
+  const response = await api.patch('/auth/profile', data);
   return response.data;
 } 

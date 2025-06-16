@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import { useAppointmentStore } from '../stores/appointmentStore';
 import { useAuthStore } from '../stores/authStore';
+import { useNotificationStore } from '../stores/notificationStore';
 import { AppointmentCard } from '../components/appointments/AppointmentCard';
 import { Button } from '../components/ui/Button';
 import { Spinner } from '../components/ui/Spinner';
@@ -19,6 +20,7 @@ export function Appointments() {
     updateAppointment,
     cancelAppointment,
   } = useAppointmentStore();
+  const { addNotification } = useNotificationStore();
   const [isUpdating, setIsUpdating] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
@@ -36,6 +38,7 @@ export function Appointments() {
       setIsUpdating(true);
       await updateAppointment(id, 'completed');
       setToast({ message: 'Appointment marked as completed.', type: 'success' });
+      await addNotification('appointment', 'Appointment marked as completed.');
     } catch (error) {
       setToast({ message: 'Failed to complete appointment.', type: 'error' });
     } finally {
@@ -48,6 +51,7 @@ export function Appointments() {
       setIsUpdating(true);
       await cancelAppointment(id);
       setToast({ message: 'Appointment cancelled.', type: 'success' });
+      await addNotification('appointment', 'Appointment cancelled.');
     } catch (error) {
       setToast({ message: 'Failed to cancel appointment.', type: 'error' });
     } finally {

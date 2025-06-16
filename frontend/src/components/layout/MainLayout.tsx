@@ -10,6 +10,7 @@ import {
   X,
 } from 'lucide-react';
 import { useState } from 'react';
+import { NotificationsDropdown } from '../ui/NotificationsDropdown';
 
 export function MainLayout() {
   const navigate = useNavigate();
@@ -89,6 +90,9 @@ export function MainLayout() {
         <div className="flex min-h-0 flex-1 flex-col border-r border-gray-200 bg-white">
           <div className="flex h-16 items-center px-4">
             <h1 className="text-xl font-bold text-primary">Healthcare Assistant</h1>
+            <div className="ml-auto flex items-center gap-2">
+              <NotificationsDropdown />
+            </div>
           </div>
           <nav className="flex-1 space-y-1 px-2 py-4">
             {navigation.map((item) => {
@@ -132,6 +136,9 @@ export function MainLayout() {
             <Menu className="h-6 w-6" />
           </Button>
           <h1 className="text-xl font-bold text-primary">Healthcare Assistant</h1>
+          <div className="ml-auto flex items-center gap-2">
+            <NotificationsDropdown />
+          </div>
         </div>
 
         <main className="min-h-[calc(100vh-4rem)] bg-gray-50">

@@ -24,7 +24,7 @@ export function AppointmentCard({
   onComplete,
   className,
 }: AppointmentCardProps) {
-  const appointmentDate = new Date(appointment.appointment_date);
+  const appointmentDate = new Date(appointment.date);
   const formattedDate = format(appointmentDate, 'MMMM d, yyyy');
   const formattedTime = format(appointmentDate, 'h:mm a');
 
@@ -51,8 +51,8 @@ export function AppointmentCard({
               </div>
             </div>
           )}
-          {appointment.notes && (
-            <p className="text-sm text-gray-600">{appointment.notes}</p>
+          {appointment.reason && (
+            <p className="text-sm text-gray-600">{appointment.reason}</p>
           )}
         </div>
         <div className="flex flex-col items-end gap-2">

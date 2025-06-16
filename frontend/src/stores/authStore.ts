@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { login as loginApi, register as registerApi, getProfile as getProfileApi } from '../utils/api';
+import { login as loginApi, register as registerApi, getProfile as getProfileApi, updateProfile as updateProfileApi } from '../utils/api';
 
 export interface User {
   id: number;
@@ -28,9 +28,11 @@ interface AuthStore {
     firstName: string;
     lastName: string;
     role: string;
+    specialization?: string;
   }) => Promise<void>;
   logout: () => void;
   fetchProfile: () => Promise<void>;
+  editProfile: (data: { firstName: string; lastName: string; email: string }) => Promise<void>;
 }
 
 export const useAuthStore = create<AuthStore>((set) => ({
@@ -92,6 +94,20 @@ export const useAuthStore = create<AuthStore>((set) => ({
         localStorage.removeItem('token');
         set({ user: null, token: null });
       }
+    }
+  },
+
+  editProfile: async (data) => {
+    set({ isLoading: true, error: null });
+    try {
+      const user = await updateProfileApi(data) as User;
+      set({ user, isLoading: false });
+    } catch (error) {
+      set({
+        error: error instanceof Error ? error.message : 'Failed to update profile',
+        isLoading: false,
+      });
+      throw error;
     }
   },
 })); 

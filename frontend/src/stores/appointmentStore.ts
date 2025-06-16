@@ -5,9 +5,9 @@ export interface Appointment {
   id: number;
   patient_id: number;
   doctor_id: number;
-  appointment_date: string;
+  date: string;
   status: 'scheduled' | 'completed' | 'cancelled';
-  notes?: string;
+  reason: string;
   created_at: string;
   updated_at: string;
   doctor?: {
@@ -37,7 +37,7 @@ export const useAppointmentStore = create<AppointmentStore>((set) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await api.get('/appointments');
-      set({ appointments: response.data, isLoading: false });
+      set({ appointments: response.data as Appointment[], isLoading: false });
     } catch (error) {
       set({ error: 'Failed to fetch appointments', isLoading: false });
     }
@@ -48,7 +48,7 @@ export const useAppointmentStore = create<AppointmentStore>((set) => ({
     try {
       const response = await api.post('/appointments', appointmentData);
       set((state) => ({
-        appointments: [...state.appointments, response.data],
+        appointments: [...state.appointments, response.data as Appointment],
         isLoading: false,
       }));
     } catch (error) {
@@ -63,7 +63,7 @@ export const useAppointmentStore = create<AppointmentStore>((set) => ({
       const response = await api.patch(`/appointments/${id}`, { status });
       set((state) => ({
         appointments: state.appointments.map((apt) =>
-          apt.id === id ? response.data : apt
+          apt.id === id ? (response.data as Appointment) : apt
         ),
         isLoading: false,
       }));

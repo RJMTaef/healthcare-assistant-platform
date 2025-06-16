@@ -11,6 +11,7 @@ export default function Register() {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [role, setRole] = useState('patient');
+  const [specialization, setSpecialization] = useState('');
   const { register, isLoading } = useAuthStore();
   const navigate = useNavigate();
   const { showToast } = useToast();
@@ -21,7 +22,7 @@ export default function Register() {
       // Split name into first and last for backend compatibility
       const [firstName, ...rest] = name.trim().split(' ');
       const lastName = rest.join(' ') || '-';
-      await register({ email, password, firstName, lastName, role });
+      await register({ email, password, firstName, lastName, role, specialization: role === 'doctor' ? specialization : undefined });
       showToast('Registration successful!', 'success');
       setTimeout(() => navigate('/dashboard'), 1200);
     } catch (err: any) {
@@ -71,6 +72,15 @@ export default function Register() {
               <option value="doctor">Doctor</option>
             </select>
           </div>
+          {role === 'doctor' && (
+            <Input
+              label="Specialization"
+              type="text"
+              value={specialization}
+              onChange={e => setSpecialization(e.target.value)}
+              required
+            />
+          )}
           <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading ? <Spinner size="sm" className="mr-2" /> : null}
             {isLoading ? 'Registering...' : 'Register'}

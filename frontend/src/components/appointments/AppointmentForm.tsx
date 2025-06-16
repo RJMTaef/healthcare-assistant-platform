@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Calendar, Clock } from 'lucide-react';
 import { useAppointmentStore } from '../../stores/appointmentStore';
 import { useAuthStore } from '../../stores/authStore';
+import { useNotificationStore } from '../../stores/notificationStore';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
 import { Spinner } from '../ui/Spinner';
@@ -12,7 +13,7 @@ import { Toast } from '../ui/Toast';
 interface AppointmentFormData {
   doctor_id: number;
   appointment_date: string;
-  notes?: string;
+  reason: string;
 }
 
 interface Doctor {
@@ -25,13 +26,14 @@ interface Doctor {
 const initialFormData: AppointmentFormData = {
   doctor_id: 0,
   appointment_date: '',
-  notes: '',
+  reason: '',
 };
 
 export function AppointmentForm() {
   const navigate = useNavigate();
   const { createAppointment, isLoading } = useAppointmentStore();
   const { user } = useAuthStore();
+  const { addNotification } = useNotificationStore();
   const [formData, setFormData] = useState<AppointmentFormData>(initialFormData);
   const [error, setError] = useState<string | null>(null);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
@@ -58,6 +60,10 @@ export function AppointmentForm() {
       setError('Please select a valid date and time.');
       return;
     }
+    if (!formData.reason || formData.reason.trim() === '') {
+      setError('Please provide a reason for the appointment.');
+      return;
+    }
     if (!user) {
       setError('You must be logged in to schedule an appointment.');
       return;
@@ -65,11 +71,14 @@ export function AppointmentForm() {
 
     try {
       await createAppointment({
-        ...formData,
+        doctor_id: formData.doctor_id,
+        date: formData.appointment_date,
+        reason: formData.reason,
         patient_id: user.id,
         status: 'scheduled',
       });
       setToast({ message: 'Appointment scheduled successfully!', type: 'success' });
+      await addNotification('appointment', 'Appointment scheduled.');
       setTimeout(() => navigate('/appointments'), 1200);
     } catch (error) {
       setToast({ message: error instanceof Error ? error.message : 'Failed to create appointment', type: 'error' });
@@ -178,19 +187,20 @@ export function AppointmentForm() {
 
           <div>
             <label
-              htmlFor="notes"
+              htmlFor="reason"
               className="block text-sm font-medium text-gray-700"
             >
-              Notes (Optional)
+              Reason for Appointment
             </label>
             <textarea
-              id="notes"
-              name="notes"
-              value={formData.notes}
+              id="reason"
+              name="reason"
+              value={formData.reason}
               onChange={handleChange}
               rows={3}
               className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-              placeholder="Add any additional notes or concerns..."
+              placeholder="Describe the reason for your appointment..."
+              required
             />
           </div>
         </div>

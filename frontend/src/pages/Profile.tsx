@@ -1,27 +1,56 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Spinner } from '../components/ui/Spinner';
 import { useToast } from '../components/ui/ToastProvider';
+import { Input } from '../components/ui/Input';
 
 export default function Profile() {
-  const { user, fetchProfile, logout, isLoading } = useAuthStore();
+  const { user, fetchProfile, logout, isLoading, editProfile } = useAuthStore();
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const [editOpen, setEditOpen] = useState(false);
+  const [form, setForm] = useState({ firstName: '', lastName: '', email: '' });
+  const [formError, setFormError] = useState('');
+  const [formLoading, setFormLoading] = useState(false);
 
   useEffect(() => {
-    fetchProfile().catch(() => {
-      showToast('Failed to fetch profile.', 'error');
-    });
+    if (!user) {
+      fetchProfile().catch(() => {
+        showToast('Failed to fetch profile.', 'error');
+      });
+    } else {
+      setForm({ firstName: user.firstName, lastName: user.lastName, email: user.email });
+    }
     // eslint-disable-next-line
-  }, []);
+  }, [user]);
 
   const handleLogout = () => {
     logout();
     showToast('Logged out successfully.', 'success');
     setTimeout(() => navigate('/login'), 1200);
+  };
+
+  const handleEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormError('');
+    setFormLoading(true);
+    if (!form.firstName.trim() || !form.lastName.trim() || !form.email.trim()) {
+      setFormError('All fields are required.');
+      setFormLoading(false);
+      return;
+    }
+    try {
+      await editProfile(form);
+      showToast('Profile updated!', 'success');
+      setEditOpen(false);
+    } catch (err: any) {
+      setFormError(err.message || 'Failed to update profile');
+    } finally {
+      setFormLoading(false);
+    }
   };
 
   if (isLoading) {
@@ -53,10 +82,60 @@ export default function Profile() {
           <div><span className="font-semibold">Role:</span> {user.role}</div>
           <div><span className="font-semibold">Joined:</span> {new Date(user.createdAt).toLocaleDateString()}</div>
         </div>
-        <Button className="mt-6" variant="destructive" onClick={handleLogout}>
-          Logout
-        </Button>
+        <div className="flex gap-4 mt-6">
+          <Button variant="outline" onClick={() => setEditOpen(true)}>
+            Edit Profile
+          </Button>
+          <Button className="" variant="destructive" onClick={handleLogout}>
+            Logout
+          </Button>
+        </div>
       </Card>
+      {editOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+          <Card className="max-w-md w-full p-8 relative">
+            <button
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-700"
+              onClick={() => setEditOpen(false)}
+              aria-label="Close"
+            >
+              ×
+            </button>
+            <h2 className="text-2xl font-bold mb-4">Edit Profile</h2>
+            <form onSubmit={handleEdit} className="space-y-4">
+              <Input
+                label="First Name"
+                value={form.firstName}
+                onChange={e => setForm(f => ({ ...f, firstName: e.target.value }))}
+                required
+              />
+              <Input
+                label="Last Name"
+                value={form.lastName}
+                onChange={e => setForm(f => ({ ...f, lastName: e.target.value }))}
+                required
+              />
+              <Input
+                label="Email"
+                type="email"
+                value={form.email}
+                onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                required
+              />
+              {formError && <div className="text-destructive text-sm">{formError}</div>}
+              <div className="flex gap-4 justify-end">
+                <Button type="button" variant="outline" onClick={() => setEditOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={formLoading}>
+                  {formLoading ? <Spinner size="sm" className="mr-2" /> : null}
+                  {formLoading ? 'Saving...' : 'Save Changes'}
+                </Button>
+              </div>
+            </form>
+          </Card>
+        </div>
+      )}
     </div>
   );
 } 
