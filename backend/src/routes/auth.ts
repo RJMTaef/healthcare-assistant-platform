@@ -1,3 +1,6 @@
+// -----------------------------------------------------------------------------
+// Auth Routes: Handles user registration, login, and profile management
+// -----------------------------------------------------------------------------
 import { Router, RequestHandler } from 'express';
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
@@ -8,18 +11,27 @@ import { asyncHandler } from '../utils/asyncHandler';
 
 const router = Router();
 
-// Helper: validate email format
+// -----------------------------------------------------------------------------
+// Helper: Validate email format using regex
+// -----------------------------------------------------------------------------
 function isValidEmail(email: string): boolean {
   return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email);
 }
 
+// -----------------------------------------------------------------------------
 // POST /api/auth/register
+// Registers a new user (patient, doctor, or admin). Doctors require specialization.
+// -----------------------------------------------------------------------------
 const registerHandler: RequestHandler = async (req, res) => {
-  const { email, password, firstName, lastName, role } = req.body;
+  const { email, password, firstName, lastName, role, specialization } = req.body;
 
-  // Basic validation
+  // Basic validation for required fields
   if (!email || !password || !firstName || !lastName || !role) {
     res.status(400).json({ message: 'All fields are required.' });
+    return;
+  }
+  if (role === 'doctor' && !specialization) {
+    res.status(400).json({ message: 'Specialization is required for doctors.' });
     return;
   }
   if (!isValidEmail(email)) {
@@ -43,14 +55,14 @@ const registerHandler: RequestHandler = async (req, res) => {
       return;
     }
 
-    // Hash password
+    // Hash password securely
     const passwordHash = await bcrypt.hash(password, 10);
 
-    // Insert user
+    // Insert new user into the database
     const result = await query(
-      `INSERT INTO users (email, password_hash, first_name, last_name, role)
-       VALUES ($1, $2, $3, $4, $5) RETURNING id, email, first_name, last_name, role, created_at`,
-      [email, passwordHash, firstName, lastName, role]
+      `INSERT INTO users (email, password_hash, first_name, last_name, role, specialization)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, email, first_name, last_name, role, specialization, created_at`,
+      [email, passwordHash, firstName, lastName, role, role === 'doctor' ? specialization : null]
     );
 
     const user = result.rows[0];
@@ -62,6 +74,7 @@ const registerHandler: RequestHandler = async (req, res) => {
         firstName: user.first_name,
         lastName: user.last_name,
         role: user.role,
+        specialization: user.specialization,
         createdAt: user.created_at
       }
     });
@@ -71,11 +84,14 @@ const registerHandler: RequestHandler = async (req, res) => {
   }
 };
 
+// -----------------------------------------------------------------------------
 // POST /api/auth/login
+// Authenticates a user and returns a JWT token and user info
+// -----------------------------------------------------------------------------
 const loginHandler: RequestHandler = async (req, res) => {
   const { email, password } = req.body;
 
-  // Basic validation
+  // Basic validation for required fields
   if (!email || !password) {
     res.status(400).json({ message: 'Email and password are required.' });
     return;
@@ -94,14 +110,14 @@ const loginHandler: RequestHandler = async (req, res) => {
     }
     const user = result.rows[0];
 
-    // Compare password
+    // Compare password hash
     const isMatch = await bcrypt.compare(password, user.password_hash);
     if (!isMatch) {
       res.status(401).json({ message: 'Invalid credentials.' });
       return;
     }
 
-    // Generate JWT
+    // Generate JWT for session management
     const payload = {
       id: user.id,
       email: user.email,
@@ -129,7 +145,10 @@ const loginHandler: RequestHandler = async (req, res) => {
   }
 };
 
-// Protected route: Get current user's profile
+// -----------------------------------------------------------------------------
+// GET /api/auth/profile
+// Returns the current user's profile (protected route)
+// -----------------------------------------------------------------------------
 const profileHandler = async (req: Request, res: Response) => {
   const user = req.user;
   if (!user) {
@@ -152,20 +171,32 @@ const profileHandler = async (req: Request, res: Response) => {
   });
 };
 
-// PATCH /api/auth/profile - update current user's profile
+// -----------------------------------------------------------------------------
+// PATCH /api/auth/profile
+// Updates the current user's profile (protected route)
+// -----------------------------------------------------------------------------
 router.patch('/profile', authMiddleware, asyncHandler(async (req, res) => {
   const user = req.user;
   if (!user) {
     return res.status(401).json({ message: 'Unauthorized' });
   }
-  const { firstName, lastName, email } = req.body;
+  const { firstName, lastName, email, specialization } = req.body;
   if (!firstName || !lastName || !email) {
     return res.status(400).json({ message: 'All fields are required.' });
   }
-  const result = await query(
-    `UPDATE users SET first_name = $1, last_name = $2, email = $3, updated_at = NOW() WHERE id = $4 RETURNING id, email, first_name, last_name, role, created_at, updated_at`,
-    [firstName, lastName, email, user.id]
-  );
+  // Build update query dynamically to support doctor specialization
+  let updateQuery = `UPDATE users SET first_name = $1, last_name = $2, email = $3`;
+  let params: any[] = [firstName, lastName, email];
+  if (user.role === 'doctor') {
+    updateQuery += ', specialization = $4';
+    params.push(specialization || null);
+    updateQuery += ', updated_at = NOW() WHERE id = $5 RETURNING id, email, first_name, last_name, role, specialization, created_at, updated_at';
+    params.push(user.id);
+  } else {
+    updateQuery += ', updated_at = NOW() WHERE id = $4 RETURNING id, email, first_name, last_name, role, created_at, updated_at';
+    params.push(user.id);
+  }
+  const result = await query(updateQuery, params);
   if (!result.rows.length) {
     return res.status(404).json({ message: 'User not found.' });
   }
@@ -176,11 +207,15 @@ router.patch('/profile', authMiddleware, asyncHandler(async (req, res) => {
     firstName: updatedUser.first_name,
     lastName: updatedUser.last_name,
     role: updatedUser.role,
+    specialization: updatedUser.specialization,
     createdAt: updatedUser.created_at,
     updatedAt: updatedUser.updated_at,
   });
 }));
 
+// -----------------------------------------------------------------------------
+// Route bindings
+// -----------------------------------------------------------------------------
 router.post('/register', registerHandler);
 router.post('/login', loginHandler);
 router.get('/profile', authMiddleware, asyncHandler(profileHandler));
