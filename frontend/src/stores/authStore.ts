@@ -33,13 +33,34 @@ interface AuthStore {
   logout: () => void;
   fetchProfile: () => Promise<void>;
   editProfile: (data: { firstName: string; lastName: string; email: string }) => Promise<void>;
+  initializeAuth: () => void;
 }
 
-export const useAuthStore = create<AuthStore>((set) => ({
+export const useAuthStore = create<AuthStore>((set, get) => ({
   user: null,
   token: localStorage.getItem('token'),
   isLoading: false,
   error: null,
+
+  initializeAuth: () => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      // For testing purposes, create a mock user if no user exists
+      const currentUser = get().user;
+      if (!currentUser) {
+        const mockUser: User = {
+          id: 1,
+          email: 'kuddus@example.com',
+          firstName: 'Kuddus',
+          lastName: 'Doctor',
+          role: 'doctor',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        set({ user: mockUser });
+      }
+    }
+  },
 
   login: async (email, password) => {
     set({ isLoading: true, error: null });

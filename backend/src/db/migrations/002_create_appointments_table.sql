@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS appointments (
 );
 
 -- Create trigger to update updated_at automatically
+DROP TRIGGER IF EXISTS update_appointments_updated_at ON appointments;
 CREATE TRIGGER update_appointments_updated_at
     BEFORE UPDATE ON appointments
     FOR EACH ROW

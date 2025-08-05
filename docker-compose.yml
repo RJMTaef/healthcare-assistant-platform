@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: healthcare_assistant_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: healthcare_assistant
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/src/db/migrations:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - healthcare_network
+
+  # Backend API
+  backend:
+    build: ./backend
+    container_name: healthcare_assistant_backend
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/healthcare_assistant
+      - JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+      - JWT_EXPIRES_IN=24h
+      - PORT=3000
+      - CORS_ORIGIN=http://localhost:80
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - healthcare_network
+    restart: unless-stopped
+
+  # Frontend Application
+  frontend:
+    build: ./frontend
+    container_name: healthcare_assistant_frontend
+    environment:
+      - VITE_API_URL=http://localhost:3000/api
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - healthcare_network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    name: healthcare_assistant_data
+
+networks:
+  healthcare_network:
+    driver: bridge 

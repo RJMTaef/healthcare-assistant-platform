@@ -1,12 +1,12 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { HeartPulse, User, LogIn, LayoutDashboard, LogOut } from 'lucide-react';
 import { cn } from '../utils/cn';
-import { useUserStore } from '../store/userStore';
+import { useAuthStore } from '../stores/authStore';
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
-  const user = useUserStore(s => s.user);
-  const logout = useUserStore(s => s.logout);
+  const user = useAuthStore(s => s.user);
+  const logout = useAuthStore(s => s.logout);
   const navigate = useNavigate();
   const handleLogout = () => {
     logout();

@@ -12,10 +12,10 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { user, token, isLoading } = useAuthStore();
 
   useEffect(() => {
-    if (!isLoading && !token) {
+    if (!isLoading && (!token || !user)) {
       navigate('/login');
     }
-  }, [token, isLoading, navigate]);
+  }, [token, user, isLoading, navigate]);
 
   if (isLoading) {
     return (
@@ -25,8 +25,14 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     );
   }
 
-  if (!user) {
-    return null;
+  if (!user || !token) {
+    return (
+      <div className="flex h-[calc(100vh-4rem)] items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600">Redirecting to login...</p>
+        </div>
+      </div>
+    );
   }
 
   return <>{children}</>;
